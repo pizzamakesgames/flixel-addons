@@ -5,7 +5,7 @@ import flash.geom.Point;
 import flash.geom.Rectangle;
 import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.graphics.FlxGraphic;
+import flixel.graphics.FlxTexture;
 import flixel.graphics.frames.FlxFrame;
 import flixel.graphics.tile.FlxDrawTilesItem;
 import flixel.math.FlxPoint;
@@ -96,7 +96,7 @@ class FlxBackdrop extends FlxSprite
 	
 	override public function loadGraphic(Graphic:FlxGraphicAsset, Animated:Bool = false, Width:Int = 0, Height:Int = 0, Unique:Bool = false, ?Key:String):FlxSprite 
 	{
-		var tileGraphic:FlxGraphic = FlxG.bitmap.add(Graphic);
+		var tileGraphic:FlxTexture = FlxG.bitmap.add(Graphic);
 		setTileFrame(tileGraphic.imageFrame.frame);
 		
 		var w:Int = Std.int(_tileFrame.sourceSize.x + _spaceX);

@@ -1,7 +1,7 @@
 package flixel.addons.effects;
 
 import flixel.FlxSprite;
-import flixel.graphics.FlxGraphic;
+import flixel.graphics.FlxTexture;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import flixel.math.FlxRandom;

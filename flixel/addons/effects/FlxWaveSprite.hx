@@ -4,7 +4,7 @@ import flash.geom.Point;
 import flash.geom.Rectangle;
 import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.graphics.FlxGraphic;
+import flixel.graphics.FlxTexture;
 import flixel.util.FlxColor;
 
 /**
