@@ -1,6 +1,7 @@
 package flixel.addons.effects;
 
-import flixel.addons.effects.FlxGlitchSprite.FlxGlitchView;
+import flixel.addons.effects.FlxGlitchSprite.FlxGlitchPlugin;
+import flixel.graphics.views.FlxGraphicPlugin;
 import flixel.FlxBaseSprite;
 import flixel.FlxSprite;
 import flixel.graphics.FlxTexture;
@@ -10,6 +11,8 @@ import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import flixel.math.FlxRandom;
 import openfl.display.BitmapData;
+import openfl.geom.Point;
+import openfl.geom.Rectangle;
 
 /**
  * This creates a FlxSprite which copies a target FlxSprite and applies a non-destructive wave-distortion effect.
@@ -20,7 +23,7 @@ import openfl.display.BitmapData;
  */
 class FlxGlitchSprite extends FlxSprite
 {
-	public var glitchView(default, null):FlxGlitchView;
+	public var glitchPlugin(default, null):FlxGlitchPlugin;
 	/**
 	 * How thick each glitch segment should be.
 	 */
@@ -55,63 +58,76 @@ class FlxGlitchSprite extends FlxSprite
 	public function new(Target:FlxSprite, Strength:Int = 4, Size:Int = 1, Delay:Float = 0.05, ?Direction:FlxGlitchDirection) 
 	{
 		super();
-		graphic = glitchView = new FlxGlitchView(this, Target, Strength, Size, Delay, Direction);
+		graphic = new FlxImage(this);
+		glitchPlugin = new FlxGlitchPlugin(this, Target, Strength, Size, Delay, Direction);
 	}
 	
 	override public function destroy():Void 
 	{
 		super.destroy();
-		glitchView = null;
+		glitchPlugin = FlxDestroyUtil.destroy(glitchPlugin);
+	}
+	
+	override public function update(elapsed:Float):Void 
+	{
+		super.update(elapsed);
+		glitchPlugin.update(elapsed);
+	}
+	
+	override public function draw():Void 
+	{
+		glitchPlugin.draw();
+		super.draw();
 	}
 	
 	private function get_size():Int
 	{
-		return glitchView.size;
+		return glitchPlugin.size;
 	}
 	
 	private function set_size(Value:Int):Int
 	{
-		return glitchView.size = Value;
+		return glitchPlugin.size = Value;
 	}
 	
 	private function get_delay():Float
 	{
-		return glitchView.delay;
+		return glitchPlugin.delay;
 	}
 	
 	private function set_delay(Value:Float):Float
 	{
-		return glitchView.delay = Value;
+		return glitchPlugin.delay = Value;
 	}
 	
 	private function get_target():FlxBaseSprite
 	{
-		return glitchView.target;
+		return glitchPlugin.target;
 	}
 	
 	private function set_target(Value:FlxBaseSprite):FlxBaseSprite
 	{
-		return glitchView.target = Value;
+		return glitchPlugin.target = Value;
 	}
 	
 	private function get_direction():FlxGlitchDirection
 	{
-		return glitchView.direction;
+		return glitchPlugin.direction;
 	}
 	
 	private function set_direction(Value:FlxGlitchDirection):FlxGlitchDirection
 	{
-		return glitchView.direction = Value;
+		return glitchPlugin.direction = Value;
 	}
 	
 	private function get_strength():Int
 	{
-		return glitchView.strength;
+		return glitchPlugin.strength;
 	}
 	
 	private function set_strength(Value:Int):Int
 	{
-		return glitchView.strength = Value;
+		return glitchPlugin.strength = Value;
 	}
 }
 
@@ -121,7 +137,7 @@ enum FlxGlitchDirection
 	VERTICAL;
 }
 
-class FlxGlitchView extends FlxImage
+class FlxGlitchPlugin extends FlxGraphicPlugin
 {
 	/**
 	 * How thick each glitch segment should be.
@@ -161,7 +177,7 @@ class FlxGlitchView extends FlxImage
 	 */
 	public function new(Parent:FlxBaseSprite, Target:FlxBaseSprite, Strength:Int = 4, Size:Int = 1, Delay:Float = 0.05, ?Direction:FlxGlitchDirection) 
 	{
-		super(Parent);
+		super(Parent.graphic);
 		target = Target;
 		strength = Strength;
 		size = Size;
@@ -179,8 +195,6 @@ class FlxGlitchView extends FlxImage
 	
 	override public function update(elapsed:Float):Void
 	{
-		super.update(elapsed);
-		
 		if (_time > delay)
 		{
 			_time = 0;
@@ -193,7 +207,7 @@ class FlxGlitchView extends FlxImage
 	
 	override public function draw():Void
 	{
-		if (alpha == 0 || target == null)
+		if (!graphic.visible || target == null)
 			return;
 		
 		if (_regen)
@@ -201,16 +215,19 @@ class FlxGlitchView extends FlxImage
 		
 		if (_time == 0 || _update)
 			updatePixels();
-		
-		super.draw();
 	}
 	
 	private function updatePixels():Void
 	{
 		_time = 0;
+		
+		var pixels:BitmapData = graphic.pixels;
+		var texture:FlxTexture = graphic.texture;
+		var rect:Rectangle = graphic._flashRect2;
+		var point:Point = graphic._flashPoint;
 		pixels.lock();
-		_flashRect2.setTo(0, 0, texture.width, texture.height);
-		pixels.fillRect(_flashRect2, FlxColor.TRANSPARENT);
+		rect.setTo(0, 0, texture.width, texture.height);
+		pixels.fillRect(rect, FlxColor.TRANSPARENT);
 		var targetPixels:BitmapData = target.graphic.getFlxFrameBitmapData();
 		var p:Int = 0;
 		
@@ -218,38 +235,39 @@ class FlxGlitchView extends FlxImage
 		{
 			while (p < target.frameHeight) 
 			{
-				_flashRect2.setTo(0, p, target.frameWidth, size);
-				if (_flashRect2.bottom > target.frameHeight)
-					_flashRect2.bottom = target.frameHeight;
+				rect.setTo(0, p, target.frameWidth, size);
+				if (rect.bottom > target.frameHeight)
+					rect.bottom = target.frameHeight;
 				
-				_flashPoint.setTo(FlxG.random.int( -strength, strength) + strength, p);
-				p += Std.int(_flashRect2.height);
-				pixels.copyPixels(targetPixels, _flashRect2, _flashPoint);
+				point.setTo(FlxG.random.int( -strength, strength) + strength, p);
+				p += Std.int(rect.height);
+				pixels.copyPixels(targetPixels, rect, point);
 			}
 		}
 		else
 		{
 			while (p < target.frameWidth) 
 			{
-				_flashRect2.setTo(p, 0, size, target.frameHeight);
-				if (_flashRect2.right > target.frameWidth)
-					_flashRect2.right = target.frameWidth;
+				rect.setTo(p, 0, size, target.frameHeight);
+				if (rect.right > target.frameWidth)
+					rect.right = target.frameWidth;
 				
-				_flashPoint.setTo(p, FlxG.random.int( -strength, strength) + strength);
-				p += Std.int(_flashRect2.width);
-				pixels.copyPixels(targetPixels, _flashRect2, _flashPoint);
+				point.setTo(p, FlxG.random.int( -strength, strength) + strength);
+				p += Std.int(rect.width);
+				pixels.copyPixels(targetPixels, rect, point);
 			}
 		}
 		
 		pixels.unlock();
-		dirty = true;
+		graphic.dirty = true;
 	}
 	
 	private function initPixels():Void
 	{
 		if (!_regen)	return;
 		
-		var oldTexture:FlxTexture = texture;
+		var oldTexture:FlxTexture = graphic.texture;
+		var texture:FlxTexture = graphic.texture;
 		var oldWidth:Int = 0;
 		var oldHeight:Int = 0;
 		
@@ -259,27 +277,31 @@ class FlxGlitchView extends FlxImage
 			oldHeight = oldTexture.height;
 		}
 		
-		parent.setPosition(target.x - (direction == HORIZONTAL ? strength : 0), target.y - (direction == VERTICAL ? strength : 0));
+		graphic.parent.setPosition(target.x - (direction == HORIZONTAL ? strength : 0), target.y - (direction == VERTICAL ? strength : 0));
 		
 		var targetPixels:BitmapData = target.graphic.getFlxFrameBitmapData();
 		var newWidth:Int = target.frameWidth + (direction == HORIZONTAL ? strength * 2 : 0);
 		var newHeight:Int = target.frameHeight + (direction == VERTICAL ? strength * 2 : 0 );
 		
+		var rect:Rectangle = graphic._flashRect2;
+		var point:Point = graphic._flashPoint;
+		
 		if (newWidth != oldWidth || newHeight != oldHeight)
 		{
-			makeGraphic(newWidth, newHeight, FlxColor.TRANSPARENT, true);
+			graphic.makeGraphic(newWidth, newHeight, FlxColor.TRANSPARENT, true);
+			texture = graphic.texture;
 		}
 		else
 		{
-			_flashRect2.setTo(0, 0, texture.width, texture.height);
-			texture.bitmap.fillRect(_flashRect2, FlxColor.TRANSPARENT);
+			rect.setTo(0, 0, texture.width, texture.height);
+			texture.bitmap.fillRect(rect, FlxColor.TRANSPARENT);
 		}
 		
-		_flashPoint.setTo((direction == HORIZONTAL ? strength : 0), (direction == VERTICAL ? strength : 0));
-		_flashRect2.setTo(0, 0, targetPixels.width, targetPixels.height);
-		pixels.copyPixels(targetPixels, _flashRect2, _flashPoint);
-		_flashRect2.setTo(0, 0, texture.width, texture.height);
-		dirty = true;
+		point.setTo((direction == HORIZONTAL ? strength : 0), (direction == VERTICAL ? strength : 0));
+		rect.setTo(0, 0, targetPixels.width, targetPixels.height);
+		graphic.pixels.copyPixels(targetPixels, rect, point);
+		rect.setTo(0, 0, texture.width, texture.height);
+		graphic.dirty = true;
 		_regen = false;
 		FlxG.bitmap.removeIfNoUse(oldTexture);
 	}
@@ -324,16 +346,5 @@ class FlxGlitchView extends FlxImage
 		}
 		
 		return Value;
-	}
-	
-	override public function getFlxFrameBitmapData():BitmapData 
-	{
-		if (_regen)
-			initPixels();
-		
-		if (_time == 0 || _update)
-			updatePixels();
-		
-		return super.getFlxFrameBitmapData();
 	}
 }

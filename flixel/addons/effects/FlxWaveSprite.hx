@@ -2,12 +2,14 @@ package flixel.addons.effects;
 
 import flash.geom.Point;
 import flash.geom.Rectangle;
-import flixel.addons.effects.FlxWaveSprite.FlxWaveView;
+import flixel.addons.effects.FlxWaveSprite.FlxWavePlugin;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.graphics.FlxTexture;
+import flixel.graphics.views.FlxGraphicPlugin;
 import flixel.graphics.views.FlxImage;
 import flixel.util.FlxColor;
+import flixel.util.FlxDestroyUtil;
 import openfl.display.BitmapData;
 
 /**
@@ -20,7 +22,7 @@ class FlxWaveSprite extends FlxSprite
 {
 	private static inline var BASE_STRENGTH:Float = 0.06;
 	
-	public var waveView(default, null):FlxWaveView;
+	public var wavePlugin(default, null):FlxWavePlugin;
 	
 	/**
 	 * Which mode we're using for the effect
@@ -51,53 +53,66 @@ class FlxWaveSprite extends FlxSprite
 	public function new(Target:FlxSprite, ?Mode:FlxWaveMode, Strength:Int = 20, Center:Int = -1, Speed:Float = 3) 
 	{
 		super();
-		graphic = waveView = new FlxWaveView(this, Target, Mode, Strength, Center, Speed);
+		graphic = new FlxImage(this);
+		wavePlugin = new FlxWavePlugin(this, Target, Mode, Strength, Center, Speed);
 	}
 	
 	override public function destroy():Void 
 	{
 		super.destroy();
-		waveView = null;
+		wavePlugin = FlxDestroyUtil.destroy(wavePlugin);
+	}
+	
+	override public function update(elapsed:Float):Void 
+	{
+		super.update(elapsed);
+		wavePlugin.update(elapsed);
+	}
+	
+	override public function draw():Void 
+	{
+		wavePlugin.draw();
+		super.draw();
 	}
 	
 	private function get_strength():Int
 	{
-		return waveView.strength;
+		return wavePlugin.strength;
 	}
 	
 	private function set_strength(value:Int):Int 
 	{
-		return waveView.strength = value;
+		return wavePlugin.strength = value;
 	}
 	
 	private function get_mode():FlxWaveMode
 	{
-		return waveView.mode;
+		return wavePlugin.mode;
 	}
 	
 	private function set_mode(value:FlxWaveMode):FlxWaveMode
 	{
-		return waveView.mode = value;
+		return wavePlugin.mode = value;
 	}
 	
 	private function get_speed():Float
 	{
-		return waveView.speed;
+		return wavePlugin.speed;
 	}
 	
 	private function set_speed(value:Float):Float
 	{
-		return waveView.speed = value;
+		return wavePlugin.speed = value;
 	}
 	
 	private function get_center():Int
 	{
-		return waveView.center;
+		return wavePlugin.center;
 	}
 	
 	private function set_center(value:Int):Int
 	{
-		return waveView.center = center;
+		return wavePlugin.center = center;
 	}
 }
 
@@ -108,7 +123,7 @@ enum FlxWaveMode
 	BOTTOM;
 }
 
-class FlxWaveView extends FlxImage
+class FlxWavePlugin extends FlxGraphicPlugin
 {
 	private static inline var BASE_STRENGTH:Float = 0.06;
 	
@@ -151,14 +166,14 @@ class FlxWaveView extends FlxImage
 	 */
 	public function new(Parent:FlxBaseSprite, Target:FlxSprite, ?Mode:FlxWaveMode, Strength:Int = 20, Center:Int = -1, Speed:Float = 3) 
 	{
-		super(Parent);
+		super(Parent.graphic);
 		_target = Target;
 		strength = Strength;
 		mode = (Mode == null) ? ALL : Mode;
 		speed = Speed;
 		if (Center < 0)
 			center = Std.int(_target.height * 0.5);
-		dirty = true;
+		graphic.dirty = true;
 		initPixels();
 	}
 	
@@ -172,21 +187,25 @@ class FlxWaveView extends FlxImage
 	
 	override public function update(elapsed:Float):Void
 	{
-		super.update(elapsed);
 		_time += elapsed * speed;
 	}
 	
 	override public function draw():Void
 	{
-		if (!visible || alpha == 0)
+		if (!graphic.visible)
 			return;
 			
 		if (_regen)
 			initPixels();
 		
+		var pixels:BitmapData = graphic.pixels;
+		var texture:FlxTexture = graphic.texture;
+		var rect:Rectangle = graphic._flashRect2;
+		var point:Point = graphic._flashPoint;
+		
 		pixels.lock();
-		_flashRect2.setTo(0, 0, texture.width, texture.height);
-		pixels.fillRect(_flashRect2, FlxColor.TRANSPARENT);
+		rect.setTo(0, 0, texture.width, texture.height);
+		pixels.fillRect(rect, FlxColor.TRANSPARENT);
 		
 		var targetPixels:BitmapData = _target.graphic.getFlxFrameBitmapData();
 		
@@ -214,9 +233,9 @@ class FlxWaveView extends FlxImage
 					}
 			}
 			
-			_flashPoint.setTo(strength + offset, oY);
-			_flashRect2.setTo(0, oY, _target.frameWidth, 1);
-			pixels.copyPixels(targetPixels, _flashRect2, _flashPoint);
+			point.setTo(strength + offset, oY);
+			rect.setTo(0, oY, _target.frameWidth, 1);
+			pixels.copyPixels(targetPixels, rect, point);
 		}
 		pixels.unlock();
 		
@@ -230,8 +249,7 @@ class FlxWaveView extends FlxImage
 				_time = 0;
 		}
 		
-		dirty = true;
-		super.draw();
+		graphic.dirty = true;
 	}
 	
 	private inline function calculateOffset(p:Float):Float
@@ -243,7 +261,8 @@ class FlxWaveView extends FlxImage
 	{
 		if (!_regen)	return;
 		
-		var oldTexture:FlxTexture = texture;
+		var oldTexture:FlxTexture = graphic.texture;
+		var texture:FlxTexture = graphic.texture;
 		var oldWidth:Int = 0;
 		var oldHeight:Int = 0;
 		
@@ -253,27 +272,31 @@ class FlxWaveView extends FlxImage
 			oldHeight = oldTexture.height;
 		}
 		
-		parent.setPosition(_target.x - strength, _target.y);
+		graphic.parent.setPosition(_target.x - strength, _target.y);
 		
 		var targetPixels:BitmapData = _target.graphic.getFlxFrameBitmapData();
 		var newWidth:Int = _target.frameWidth + (strength * 2);
 		var newHeight:Int = _target.frameHeight;
 		
+		var rect:Rectangle = graphic._flashRect2;
+		var point:Point = graphic._flashPoint;
+		
 		if (newWidth != oldWidth || newHeight != oldHeight)
 		{
-			makeGraphic(newWidth, newHeight, FlxColor.TRANSPARENT, true);
+			graphic.makeGraphic(newWidth, newHeight, FlxColor.TRANSPARENT, true);
+			texture = graphic.texture;
 		}
 		else
 		{
-			_flashRect2.setTo(0, 0, texture.width, texture.height);
-			texture.bitmap.fillRect(_flashRect2, FlxColor.TRANSPARENT);
+			rect.setTo(0, 0, texture.width, texture.height);
+			texture.bitmap.fillRect(rect, FlxColor.TRANSPARENT);
 		}
 		
-		_flashPoint.setTo(strength, 0);
-		_flashRect2.setTo(0, 0, targetPixels.width, targetPixels.height);
-		pixels.copyPixels(targetPixels, _flashRect2, _flashPoint);
-		_flashRect2.setTo(0, 0, texture.width, texture.height);
-		dirty = true;
+		point.setTo(strength, 0);
+		rect.setTo(0, 0, targetPixels.width, targetPixels.height);
+		graphic.pixels.copyPixels(targetPixels, rect, point);
+		rect.setTo(0, 0, texture.width, texture.height);
+		graphic.dirty = true;
 		_regen = false;
 		FlxG.bitmap.removeIfNoUse(oldTexture);
 	}

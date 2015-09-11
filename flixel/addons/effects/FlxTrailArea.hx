@@ -194,7 +194,7 @@ class FlxTrailArea extends FlxSprite
 					else 
 					{
 						var scaled = (member.scale.x != 1) || (member.scale.y != 1);
-						var rotated = (member.angle != 0) && (member.bakedRotationAngle <= 0);
+						var rotated = member.graphic.rotated;
 						_matrix.identity();
 						if (rotated || scaled) 
 						{
