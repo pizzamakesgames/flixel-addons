@@ -1,5 +1,8 @@
 package flixel.addons.display;
 
+// TODO: change origin handling in base class...
+
+/*
 import flash.display.BitmapData;
 import flash.geom.Point;
 import flash.geom.Rectangle;
@@ -17,14 +20,9 @@ import flixel.math.FlxPoint;
 @:keep @:bitmap("assets/images/logo/default.png")
 private class GraphicDefault extends BitmapData {}
 
-/**
- * FlxSprite with "centered" origin, so collisions are broken for this type of objects.
- */
+// FlxSprite with "centered" origin, so collisions are broken for this type of objects.
 class FlxSpriteOrigin extends FlxSprite
 {
-	/**
-	 * Called by game loop, updates then blits or renders current frame of animation to the screen
-	 */
 	override public function draw():Void
 	{
 		if (_frame == null)
@@ -108,13 +106,6 @@ class FlxSpriteOrigin extends FlxSprite
 		#end
 	}
 	
-	/**
-	 * Check and see if this object is currently on screen. Differs from FlxObject's implementation
-	 * in that it takes the actual graphic into account, not just the hitbox or bounding box or whatever.
-	 * 
-	 * @param	Camera		Specify which game camera you want.  If null getScreenXY() will just grab the first global camera.
-	 * @return	Whether the object is on screen or not.
-	 */
 	override public function isOnScreen(?Camera:FlxCamera):Bool
 	{
 		if (Camera == null)
@@ -177,3 +168,4 @@ class FlxSpriteOrigin extends FlxSprite
 		return true;
 	}	
 }
+*/
