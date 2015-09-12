@@ -12,6 +12,7 @@ import flixel.group.FlxGroup;
 import flixel.math.FlxAngle;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
+import flixel.graphics.views.FlxGraphicPlugin;
 
 /**
  * This provides an area in which the added sprites have a trail effect. Usage: Create the FlxTrailArea and 
@@ -288,4 +289,9 @@ class FlxTrailArea extends FlxSprite
 		
 		return _height = Height;
 	}
+}
+
+class FlxTrailPlugin extends FlxGraphicPlugin
+{
+	
 }

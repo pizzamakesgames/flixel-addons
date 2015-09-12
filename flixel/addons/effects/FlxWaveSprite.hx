@@ -50,29 +50,18 @@ class FlxWaveSprite extends FlxSprite
 	 * @param	Center		The 'center' of the effect when using BOTTOM or TOP modes. Anything above(BOTTOM)/below(TOP) this point on the image will have no distortion effect.
 	 * @param	Speed		How fast you want the effect to move. Higher values = faster.
 	 */
-	public function new(Target:FlxSprite, ?Mode:FlxWaveMode, Strength:Int = 20, Center:Int = -1, Speed:Float = 3) 
+	public function new(Target:FlxBaseSprite, ?Mode:FlxWaveMode, Strength:Int = 20, Center:Int = -1, Speed:Float = 3) 
 	{
 		super();
 		graphic = new FlxImage(this);
-		wavePlugin = new FlxWavePlugin(this, Target, Mode, Strength, Center, Speed);
+		
+		addPlugin(wavePlugin = new FlxWavePlugin(this, Target, Mode, Strength, Center, Speed));
 	}
 	
 	override public function destroy():Void 
 	{
 		super.destroy();
-		wavePlugin = FlxDestroyUtil.destroy(wavePlugin);
-	}
-	
-	override public function update(elapsed:Float):Void 
-	{
-		super.update(elapsed);
-		wavePlugin.update(elapsed);
-	}
-	
-	override public function draw():Void 
-	{
-		wavePlugin.draw();
-		super.draw();
+		wavePlugin = null;
 	}
 	
 	private function get_strength():Int
@@ -164,9 +153,9 @@ class FlxWavePlugin extends FlxGraphicPlugin
 	 * @param	Center		The 'center' of the effect when using BOTTOM or TOP modes. Anything above(BOTTOM)/below(TOP) this point on the image will have no distortion effect.
 	 * @param	Speed		How fast you want the effect to move. Higher values = faster.
 	 */
-	public function new(Parent:FlxBaseSprite, Target:FlxSprite, ?Mode:FlxWaveMode, Strength:Int = 20, Center:Int = -1, Speed:Float = 3) 
+	public function new(Parent:FlxBaseSprite, Target:FlxBaseSprite, ?Mode:FlxWaveMode, Strength:Int = 20, Center:Int = -1, Speed:Float = 3) 
 	{
-		super(Parent.graphic);
+		super(Parent);
 		_target = Target;
 		strength = Strength;
 		mode = (Mode == null) ? ALL : Mode;
@@ -272,7 +261,7 @@ class FlxWavePlugin extends FlxGraphicPlugin
 			oldHeight = oldTexture.height;
 		}
 		
-		graphic.parent.setPosition(_target.x - strength, _target.y);
+		parent.setPosition(_target.x - strength, _target.y);
 		
 		var targetPixels:BitmapData = _target.graphic.getFlxFrameBitmapData();
 		var newWidth:Int = _target.frameWidth + (strength * 2);

@@ -55,29 +55,17 @@ class FlxGlitchSprite extends FlxSprite
 	 * @param	Delay		How long (in seconds) between each glitch update
 	 * @param	Direction	Which Direction you want the effect to be applied (HORIZONTAL or VERTICAL)
 	 */
-	public function new(Target:FlxSprite, Strength:Int = 4, Size:Int = 1, Delay:Float = 0.05, ?Direction:FlxGlitchDirection) 
+	public function new(Target:FlxBaseSprite, Strength:Int = 4, Size:Int = 1, Delay:Float = 0.05, ?Direction:FlxGlitchDirection) 
 	{
 		super();
 		graphic = new FlxImage(this);
-		glitchPlugin = new FlxGlitchPlugin(this, Target, Strength, Size, Delay, Direction);
+		addPlugin(glitchPlugin = new FlxGlitchPlugin(this, Target, Strength, Size, Delay, Direction));
 	}
 	
 	override public function destroy():Void 
 	{
 		super.destroy();
-		glitchPlugin = FlxDestroyUtil.destroy(glitchPlugin);
-	}
-	
-	override public function update(elapsed:Float):Void 
-	{
-		super.update(elapsed);
-		glitchPlugin.update(elapsed);
-	}
-	
-	override public function draw():Void 
-	{
-		glitchPlugin.draw();
-		super.draw();
+		glitchPlugin = null;
 	}
 	
 	private function get_size():Int
@@ -177,7 +165,7 @@ class FlxGlitchPlugin extends FlxGraphicPlugin
 	 */
 	public function new(Parent:FlxBaseSprite, Target:FlxBaseSprite, Strength:Int = 4, Size:Int = 1, Delay:Float = 0.05, ?Direction:FlxGlitchDirection) 
 	{
-		super(Parent.graphic);
+		super(Parent);
 		target = Target;
 		strength = Strength;
 		size = Size;
@@ -277,7 +265,7 @@ class FlxGlitchPlugin extends FlxGraphicPlugin
 			oldHeight = oldTexture.height;
 		}
 		
-		graphic.parent.setPosition(target.x - (direction == HORIZONTAL ? strength : 0), target.y - (direction == VERTICAL ? strength : 0));
+		parent.setPosition(target.x - (direction == HORIZONTAL ? strength : 0), target.y - (direction == VERTICAL ? strength : 0));
 		
 		var targetPixels:BitmapData = target.graphic.getFlxFrameBitmapData();
 		var newWidth:Int = target.frameWidth + (direction == HORIZONTAL ? strength * 2 : 0);
