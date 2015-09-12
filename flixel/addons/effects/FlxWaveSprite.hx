@@ -54,14 +54,25 @@ class FlxWaveSprite extends FlxSprite
 	{
 		super();
 		graphic = new FlxImage(this);
-		
-		addPlugin(wavePlugin = new FlxWavePlugin(this, Target, Mode, Strength, Center, Speed));
+		wavePlugin = new FlxWavePlugin(this, Target, Mode, Strength, Center, Speed);
 	}
 	
 	override public function destroy():Void 
 	{
 		super.destroy();
-		wavePlugin = null;
+		wavePlugin = FlxDestroyUtil.destroy(wavePlugin);
+	}
+	
+	override public function update(elapsed:Float):Void 
+	{
+		super.update(elapsed);
+		wavePlugin.update(elapsed);
+	}
+	
+	override public function draw():Void 
+	{
+		wavePlugin.draw();
+		super.draw();
 	}
 	
 	private function get_strength():Int

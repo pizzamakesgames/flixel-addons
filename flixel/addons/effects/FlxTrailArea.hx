@@ -6,8 +6,11 @@ import flash.geom.ColorTransform;
 import flash.geom.Matrix;
 import flash.geom.Point;
 import flash.geom.Rectangle;
+import flixel.addons.effects.FlxTrailArea.FlxTrailPlugin;
+import flixel.FlxBaseSprite;
 import flixel.FlxG;
 import flixel.FlxSprite;
+import flixel.graphics.views.FlxGraphic;
 import flixel.group.FlxGroup;
 import flixel.math.FlxAngle;
 import flixel.util.FlxColor;
@@ -21,6 +24,279 @@ import flixel.graphics.views.FlxGraphicPlugin;
  */
 class FlxTrailArea extends FlxSprite 
 {
+	public var trailPlugin(default, null):FlxTrailPlugin;
+	
+	/**
+	 * How often the trail is updated, in frames. Default value is 2, or "every frame".
+	 */
+	public var delay(get, set):Int;
+	
+	/**
+	 * If this is true, the render process ignores any color/scale/rotation manipulation of the sprites
+	 * with the advantage of being faster
+	 */
+	public var simpleRender(get, set):Bool;
+	
+	/**
+	 * Specifies the blendMode for the trails.
+	 * Ignored in simple render mode. Only works on the flash target.
+	 */
+	public var blendMode(get, set):BlendMode;
+	
+	/**
+	 * Stores all sprites that have a trail.
+	 */
+	public var group(get, set):FlxTypedGroup<FlxBaseSprite>;
+	
+	/**
+	 * The bitmap's red value is multiplied by this every update
+	 */
+	public var redMultiplier(get, set):Float;
+	
+	/**
+	 * The bitmap's green value is multiplied by this every update
+	 */
+	public var greenMultiplier(get, set):Float;
+	
+	/**
+	 * The bitmap's blue value is multiplied by this every update
+	 */
+	public var blueMultiplier(get, set):Float;
+	
+	/**
+	 * The bitmap's alpha value is multiplied by this every update
+	 */
+	public var alphaMultiplier(get, set):Float;
+	
+	/**
+	 * The bitmap's red value is offsettet by this every update
+	 */
+	public var redOffset(get, set):Float;
+	
+	/**
+	 * The bitmap's green value is offsettet by this every update
+	 */
+	public var greenOffset(get, set):Float;
+	
+	/**
+	 * The bitmap's blue value is offsettet by this every update
+	 */
+	public var blueOffset(get, set):Float;
+	
+	/**
+	 * The bitmap's alpha value is offsettet by this every update
+	 */
+	public var alphaOffset(get, set):Float;
+	
+	 /**
+	  * Creates a new FlxTrailArea, in which all added sprites get a trail effect.
+	  * 
+	  * @param	X				x position of the trail area
+	  * @param	Y				y position of the trail area
+	  * @param	Width			The width of the area - defaults to FlxG.width
+	  * @param	Height			The height of the area - defaults to FlxG.height
+	  * @param	AlphaMultiplier By what the area's alpha is multiplied per update
+	  * @param	Delay			How often to update the trail. 1 updates every frame
+	  * @param	SimpleRender 	If simple rendering should be used. Ignores all sprite transformations
+	  * @param	Antialiasing	If sprites should be smoothed when drawn to the area. Ignored when simple rendering is on
+	  * @param	TrailBlendMode 	The blend mode used for the area. Only works in flash
+	  */
+	public function new(X:Int = 0, Y:Int = 0, Width:Int = 0, Height:Int = 0, AlphaMultiplier:Float = 0.8, Delay:Int = 2, SimpleRender:Bool = false, Antialiasing:Bool = false, ?TrailBlendMode:BlendMode) 
+	{
+		super(X, Y);
+		trailPlugin = new FlxTrailPlugin(this, Width, Height, AlphaMultiplier, Delay, SimpleRender, Antialiasing, TrailBlendMode);
+	}
+	
+	/**
+	 * Sets the FlxTrailArea to a new size. Clears the area!
+	 * 
+	 * @param	Width		The new width
+	 * @param	Height		The new height
+	 */
+	override public function setSize(Width:Float, Height:Float)
+	{
+		trailPlugin.setSize(Width, Height);
+	}
+	
+	override public function destroy():Void 
+	{
+		super.destroy();
+		trailPlugin = FlxDestroyUtil.destroy(trailPlugin);
+	}
+	
+	override public function draw():Void 
+	{
+		trailPlugin.draw();
+		super.draw();
+	}
+	
+	/**
+	 * Wipes the trail area
+	 */
+	public function resetTrail():Void
+	{
+		trailPlugin.resetTrail();
+	}
+	
+	/**
+	 * Adds a FlxSprite to the FlxTrailArea. Not an add() in the traditional sense,
+	 * this just enables the trail effect for the sprite. You still need to add it to your state for it to update!
+	 * 
+	 * @param	Sprite		The sprite to enable the trail effect for
+	 * @return 	The FlxSprite, useful for chaining stuff together
+	 */
+	public function add(Sprite:FlxBaseSprite):FlxBaseSprite
+	{
+		return trailPlugin.add(Sprite);
+	}
+	
+	/**
+	 * Setter for width, defaults to FlxG.width, creates new _rendeBitmap if neccessary
+	 */
+	override private function set_width(Width:Float):Float 
+	{
+		if (trailPlugin != null && Width != trailPlugin.width)
+			trailPlugin.width = Width;
+		
+		return super.set_width(Width);
+	}
+	
+	/**
+	 * Setter for height, defaults to FlxG.height, creates new _rendeBitmap if neccessary
+	 */
+	override private function set_height(Height:Float):Float
+	{
+		if (trailPlugin != null && Height != trailPlugin.height)
+			trailPlugin.height = Height;
+		
+		return super.set_height(Height);
+	}
+	
+	private function get_delay():Int
+	{
+		return trailPlugin.delay;
+	}
+	
+	private function set_delay(Value:Int):Int
+	{
+		return trailPlugin.delay = Value;
+	}
+	
+	private function get_simpleRender():Bool
+	{
+		return trailPlugin.simpleRender;
+	}
+	
+	private function set_simpleRender(Value:Bool):Bool
+	{
+		return trailPlugin.simpleRender = Value;
+	}
+	
+	private function get_blendMode():BlendMode
+	{
+		return trailPlugin.blendMode;
+	}
+	
+	private function set_blendMode(Value:BlendMode):BlendMode
+	{
+		return trailPlugin.blendMode = Value;
+	}
+	
+	private function get_group():FlxTypedGroup<FlxBaseSprite>
+	{
+		return trailPlugin.group;
+	}
+	
+	private function set_group(Value:FlxTypedGroup<FlxBaseSprite>):FlxTypedGroup<FlxBaseSprite>
+	{
+		return trailPlugin.group = Value;
+	}
+	
+	private function get_redMultiplier():Float
+	{
+		return trailPlugin.redMultiplier;
+	}
+	
+	private function set_redMultiplier(Value:Float):Float
+	{
+		return trailPlugin.redMultiplier = Value;
+	}
+	
+	private function get_greenMultiplier():Float
+	{
+		return trailPlugin.greenMultiplier;
+	}
+	
+	private function set_greenMultiplier(Value:Float):Float
+	{
+		return trailPlugin.greenMultiplier = Value;
+	}
+	
+	private function get_blueMultiplier():Float
+	{
+		return trailPlugin.blueMultiplier;
+	}
+	
+	private function set_blueMultiplier(Value:Float):Float
+	{
+		return trailPlugin.blueMultiplier = Value;
+	}
+	
+	private function get_alphaMultiplier():Float
+	{
+		return trailPlugin.alphaMultiplier;
+	}
+	
+	private function set_alphaMultiplier(Value:Float):Float
+	{
+		return trailPlugin.alphaMultiplier = Value;
+	}
+	
+	private function get_redOffset():Float
+	{
+		return trailPlugin.redOffset;
+	}
+	
+	private function set_redOffset(Value:Float):Float
+	{
+		return trailPlugin.redOffset = Value;
+	}
+	
+	private function get_greenOffset():Float
+	{
+		return trailPlugin.greenOffset;
+	}
+	
+	private function set_greenOffset(Value:Float):Float
+	{
+		return trailPlugin.greenOffset = Value;
+	}
+	
+	private function get_blueOffset():Float
+	{
+		return trailPlugin.blueOffset;
+	}
+	
+	private function set_blueOffset(Value:Float):Float
+	{
+		return trailPlugin.blueOffset = Value;
+	}
+	
+	private function get_alphaOffset():Float
+	{
+		return trailPlugin.alphaOffset;
+	}
+	
+	private function set_alphaOffset(Value:Float):Float
+	{
+		return trailPlugin.alphaOffset = Value;
+	}
+}
+
+class FlxTrailPlugin extends FlxGraphicPlugin
+{
+	private static var point:Point = new Point();
+	
 	/**
 	 * How often the trail is updated, in frames. Default value is 2, or "every frame".
 	 */
@@ -41,7 +317,7 @@ class FlxTrailArea extends FlxSprite
 	/**
 	 * Stores all sprites that have a trail.
 	 */
-	public var group:FlxTypedGroup<FlxSprite>;
+	public var group:FlxTypedGroup<FlxBaseSprite>;
 	
 	/**
 	 * The bitmap's red value is multiplied by this every update
@@ -88,6 +364,10 @@ class FlxTrailArea extends FlxSprite
 	 */
 	private var _counter:Int = 0;
 	
+	public var width(get, set):Float;
+	
+	public var height(get, set):Float;
+	
 	/**
 	 * Internal width variable
 	 * Initialized to 1 to prevent invalid bitmapData during construction
@@ -105,34 +385,21 @@ class FlxTrailArea extends FlxSprite
 	 */
 	private var _areaPixels:BitmapData;
 	
-	 /**
-	  * Creates a new FlxTrailArea, in which all added sprites get a trail effect.
-	  * 
-	  * @param	X				x position of the trail area
-	  * @param	Y				y position of the trail area
-	  * @param	Width			The width of the area - defaults to FlxG.width
-	  * @param	Height			The height of the area - defaults to FlxG.height
-	  * @param	AlphaMultiplier By what the area's alpha is multiplied per update
-	  * @param	Delay			How often to update the trail. 1 updates every frame
-	  * @param	SimpleRender 	If simple rendering should be used. Ignores all sprite transformations
-	  * @param	Antialiasing	If sprites should be smoothed when drawn to the area. Ignored when simple rendering is on
-	  * @param	TrailBlendMode 	The blend mode used for the area. Only works in flash
-	  */
-	public function new(X:Int = 0, Y:Int = 0, Width:Int = 0, Height:Int = 0, AlphaMultiplier:Float = 0.8, Delay:Int = 2, SimpleRender:Bool = false, Antialiasing:Bool = false, ?TrailBlendMode:BlendMode) 
+	public function new(Parent:FlxBaseSprite, Width:Int = 0, Height:Int = 0, AlphaMultiplier:Float = 0.8, Delay:Int = 2, SimpleRender:Bool = false, Antialiasing:Bool = false, ?TrailBlendMode:BlendMode)
 	{
-		super(X, Y);
+		super(Parent);
 		
-		group = new FlxTypedGroup<FlxSprite>();
+		group = new FlxTypedGroup<FlxBaseSprite>();
 		
 		//Sync variables
 		delay = Delay;
 		simpleRender = SimpleRender;
 		blendMode = TrailBlendMode;
-		antialiasing = Antialiasing;
+		graphic.antialiasing = Antialiasing;
 		alphaMultiplier = AlphaMultiplier;
 		
 		setSize(Width, Height);
-		pixels = _areaPixels;
+		graphic.pixels = _areaPixels;
 	}
 	
 	/**
@@ -141,7 +408,7 @@ class FlxTrailArea extends FlxSprite
 	 * @param	Width		The new width
 	 * @param	Height		The new height
 	 */
-	override public function setSize(Width:Float, Height:Float)
+	public function setSize(Width:Float, Height:Float)
 	{
 		Width = (Width <= 0) ? FlxG.width : Width;
 		Height = (Height <= 0) ? FlxG.height : Height;
@@ -159,7 +426,7 @@ class FlxTrailArea extends FlxSprite
 		group = FlxDestroyUtil.destroy(group);
 		blendMode = null;
 		
-		if (pixels != _areaPixels)
+		if (graphic.pixels != _areaPixels)
 		{
 			_areaPixels.dispose();
 		}
@@ -186,42 +453,23 @@ class FlxTrailArea extends FlxSprite
 			{
 				if (member.exists) 
 				{
+					point.setTo(member.x - parent.x, member.y - parent.y);
+					
 					if (simpleRender) 
 					{
-						_areaPixels.copyPixels(member.getFlxFrameBitmapData(), 
-												new Rectangle(0, 0, member.frameWidth, member.frameHeight), 
-												new Point(member.x - x, member.y - y), null, null, true);
+						member.graphic.paintOn(_areaPixels, point, true, false);
 					}
 					else 
 					{
-						var scaled = (member.scale.x != 1) || (member.scale.y != 1);
-						var rotated = member.graphic.rotated;
-						_matrix.identity();
-						if (rotated || scaled) 
-						{
-							_matrix.translate( -(member.origin.x), -(member.origin.y));
-							if (scaled)
-							{
-								_matrix.scale(member.scale.x, member.scale.y);
-							}
-							if (rotated)
-							{
-								_matrix.rotate(member.angle * FlxAngle.TO_RAD);
-							}
-							_matrix.translate((member.origin.x), (member.origin.y));
-						}
-						_matrix.translate(member.x - x, member.y - y);
-						_areaPixels.draw(member.getFlxFrameBitmapData(), _matrix, member.colorTransform, blendMode, null, antialiasing);
+						member.graphic.drawOn(_areaPixels, Std.int(point.x), Std.int(point.y));
 					}
 					
 				}
 			}
 			
 			_areaPixels.unlock();
-			pixels = _areaPixels;
+			graphic.pixels = _areaPixels;
 		}
-		
-		super.draw();
 	}
 	
 	/**
@@ -239,7 +487,7 @@ class FlxTrailArea extends FlxSprite
 	 * @param	Sprite		The sprite to enable the trail effect for
 	 * @return 	The FlxSprite, useful for chaining stuff together
 	 */
-	public inline function add(Sprite:FlxSprite):FlxSprite
+	public inline function add(Sprite:FlxBaseSprite):FlxBaseSprite
 	{
 		return group.add(Sprite);
 	}
@@ -247,7 +495,7 @@ class FlxTrailArea extends FlxSprite
 	/**
 	 * Redirects width to _width
 	 */
-	override private inline function get_width():Float
+	private function get_width():Float
 	{
 		return _width;
 	}
@@ -255,7 +503,7 @@ class FlxTrailArea extends FlxSprite
 	/**
 	 * Setter for width, defaults to FlxG.width, creates new _rendeBitmap if neccessary
 	 */
-	override private function set_width(Width:Float):Float 
+	private function set_width(Width:Float):Float 
 	{
 		Width = (Width <= 0) ? FlxG.width : Width;
 		
@@ -270,7 +518,7 @@ class FlxTrailArea extends FlxSprite
 	/**
 	 * Redirects height to _height
 	 */
-	override private inline function get_height():Float
+	private function get_height():Float
 	{
 		return _height;
 	}
@@ -278,7 +526,7 @@ class FlxTrailArea extends FlxSprite
 	/**
 	 * Setter for height, defaults to FlxG.height, creates new _rendeBitmap if neccessary
 	 */
-	override private function set_height(Height:Float):Float
+	private function set_height(Height:Float):Float
 	{
 		Height = (Height <= 0) ? FlxG.height : Height;
 		
@@ -289,9 +537,4 @@ class FlxTrailArea extends FlxSprite
 		
 		return _height = Height;
 	}
-}
-
-class FlxTrailPlugin extends FlxGraphicPlugin
-{
-	
 }

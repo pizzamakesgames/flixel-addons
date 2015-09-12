@@ -59,13 +59,25 @@ class FlxGlitchSprite extends FlxSprite
 	{
 		super();
 		graphic = new FlxImage(this);
-		addPlugin(glitchPlugin = new FlxGlitchPlugin(this, Target, Strength, Size, Delay, Direction));
+		glitchPlugin = new FlxGlitchPlugin(this, Target, Strength, Size, Delay, Direction);
 	}
 	
 	override public function destroy():Void 
 	{
 		super.destroy();
-		glitchPlugin = null;
+		glitchPlugin = FlxDestroyUtil.destroy(glitchPlugin);
+	}
+	
+	override public function update(elapsed:Float):Void 
+	{
+		super.update(elapsed);
+		glitchPlugin.update(elapsed);
+	}
+	
+	override public function draw():Void 
+	{
+		glitchPlugin.draw();
+		super.draw();
 	}
 	
 	private function get_size():Int
